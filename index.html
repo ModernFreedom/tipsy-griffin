@@ -149,11 +149,11 @@ for(const k in STREETS){ NAMES[k]=[STREETS[k].title, STREETS[k].sub]; }
 // vehicles — each lives on a street; ride either one
 const vehicles=[
   {kind:'car',  name:'Car',       x:650,y:470,vx:0,vy:0,facing:'right',scene:'street'},
-  {kind:'bike', name:'Motorbike', x:430,y:540,vx:0,vy:0,facing:'right',scene:'street2'},
+  {kind:'bike', name:'Motorbike', x:430,y:490,vx:0,vy:0,facing:'right',scene:'street'},
   {kind:'boat', name:'Boat',      x:550,y:448,vx:0,vy:0,facing:'right',angle:-Math.PI/2,scene:'lake'},
   {kind:'plane',name:'Plane',     x:540,y:430,vx:0,vy:0,angle:0,scene:'airport'},
 ];
-const VEH={ car:{w:100,h:40,accel:1100,fric:0.93,max:640}, bike:{w:78,h:28,accel:1600,fric:0.95,max:820}, boat:{w:70,h:34,accel:720,fric:0.975,max:400}, plane:{w:120,h:96} };
+const VEH={ car:{w:100,h:40,accel:1700,fric:0.955,max:780}, bike:{w:78,h:28,accel:1950,fric:0.96,max:920}, boat:{w:70,h:34,accel:720,fric:0.975,max:400}, plane:{w:120,h:96} };
 let driving=null;
 function vehInScene(){ return vehicles.filter(v=>v.scene===state.scene); }
 function buildStreetSolids(c){ const s=[{x:0,y:0,w:W,h:262}];
@@ -188,7 +188,7 @@ let islandBite=0;
 vehicles.push({kind:'boat',name:'Dinghy',x:150,y:300,vx:0,vy:0,facing:'right',angle:0,scene:'island'});
 
 // ============================ TYRONE'S JUNGLE ============================
-const jungleFolk=[ {x:W/2+90,y:470,name:'Tyrone',pal:'tyrone',facing:'left',lines:["Welcome to my jungle, friend — few find their way here.","I have lived beneath this canopy for many years; it keeps me cool.","Watch for the sharks off the beach on your way back."]} ];
+const jungleFolk=[ {x:W/2+90,y:470,name:'Tyrone',pal:'tyrone',facing:'left',lines:["Ayy, welcome to my turf, homie — this whole jungle, that's all me, ya feel me?","Been postin' up under these trees for years, cuz. Stay cool, stay low.","Watch them sharks out on the beach, dawg — they don't play. Aight, I'm out."]} ];
 const jungleTrees=[]; for(let i=0;i<15;i++) jungleTrees.push({x:srnd()*W,y:120+srnd()*470,s:0.65+srnd()*0.8});
 const jungleBushes=[]; for(let i=0;i<11;i++) jungleBushes.push({x:60+srnd()*(W-120),y:430+srnd()*220});
 const jungleShafts=[260,560,880];
