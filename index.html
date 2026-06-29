@@ -158,7 +158,7 @@ let driving=null;
 function vehInScene(){ return vehicles.filter(v=>v.scene===state.scene); }
 function buildStreetSolids(c){ const s=[{x:0,y:0,w:W,h:262}];
   c.props.forEach(p=>{ if(p.t==='well') s.push({x:p.x-34,y:p.y-30,w:68,h:56}); else if(p.t==='cart') s.push({x:p.x-50,y:p.y-22,w:100,h:52}); });
-  c.lamps.forEach(l=>s.push({x:l.x-5,y:l.y-4,w:10,h:12})); return s; }
+  return s; }   // lampposts are decorative — no collider (they were snagging the player)
 
 // ============================ THE LAKE ============================
 const LAKE={ water:{x0:96,y0:182,x1:W-96,y1:452}, dock:{x:W/2,y:448}, shoreY:478 };
@@ -436,8 +436,9 @@ function update(dt){
     const l=Math.hypot(ix,iy)||1; ix/=l; iy/=l;
     const sp=player.speed*(keys['shift']?1.8:1)*dt;   // px this frame (speed is px/sec)
     if(Math.abs(iy)>=Math.abs(ix)) player.dir=iy<0?'up':'down'; else player.dir=ix<0?'left':'right';
-    const nx=player.x+ix*sp; if(!blocked(nx,player.y,player.r)) player.x=nx;
-    const ny=player.y+iy*sp; if(!blocked(player.x,ny,player.r)) player.y=ny;
+    const stuck=blocked(player.x,player.y,player.r);   // if somehow inside a solid, let them walk free to escape
+    const nx=player.x+ix*sp; if(stuck||!blocked(nx,player.y,player.r)) player.x=nx;
+    const ny=player.y+iy*sp; if(stuck||!blocked(player.x,ny,player.r)) player.y=ny;
     player.anim+=sp*0.05;
   } else player.anim=0;
 
@@ -517,7 +518,7 @@ function draw(time){
   else if(state.scene==='island') drawIsland(time);
   else drawOutdoor(state.scene,time);
   const modal=(pool&&pool.active)||(bank&&bank.active)||(box&&box.active);
-  if(!modal){ postFX(); drawMotes(time); }
+  if(!modal) drawMotes(time);
   if(driving) drawDriveHint();
   drawCoins();
   if(pool&&pool.active) drawPool(time);
@@ -562,7 +563,6 @@ function drawBackWall(time){
   ctx.fillStyle='#caa24a'; rr(50,70,86,70,4); ctx.fill();
   ctx.fillStyle='#7a5a2c'; ctx.fillRect(56,76,74,58);
   ctx.fillStyle='#caa24a'; for(let i=0;i<5;i++) ctx.fillRect(60+i*14,80+(i%2)*22,10,18);
-  drawDungeonDoor(time);
   drawATM(time);
   ctx.fillStyle='#3a2614'; ctx.fillRect(0,0,W,30); ctx.fillRect(0,FLOOR_TOP-16,W,16);
   for(const sx of [0,330,500,742,962,W-14]){ ctx.fillStyle='#34220f'; ctx.fillRect(sx,0,16,FLOOR_TOP); }
@@ -570,23 +570,36 @@ function drawBackWall(time){
   ctx.fillStyle=wg; ctx.fillRect(0,FLOOR_TOP-58,W,42);
   ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.lineWidth=1;
   for(let x=20;x<W;x+=46){ ctx.beginPath(); ctx.moveTo(x,FLOOR_TOP-58); ctx.lineTo(x,FLOOR_TOP-16); ctx.stroke(); }
+  drawDungeonDoor(time);   // drawn last so it sits clearly on top of the wall/wainscot
 }
-function drawDungeonDoor(time){
-  const d=DUNGEON_DOOR;
-  // stone arch
-  ctx.fillStyle='#4a4640'; rr(d.x-10,d.y-10,d.w+20,d.h+20,12); ctx.fill();
-  ctx.fillStyle='#6a655c'; for(let i=0;i<6;i++){ const a=Math.PI*(0.15+i*0.14); ctx.fillRect(d.x-6+Math.cos(a)*0+i*((d.w+12)/6), d.y-8, (d.w+12)/6-2, 10); }
-  // dark opening with descending steps
-  const og=ctx.createLinearGradient(0,d.y,0,d.y+d.h); og.addColorStop(0,'#05060a'); og.addColorStop(1,'#0c1018');
-  ctx.fillStyle=og; rr(d.x,d.y+6,d.w,d.h-6,6); ctx.fill();
-  ctx.fillStyle='rgba(90,110,150,.18)'; for(let i=0;i<5;i++){ ctx.fillRect(d.x+8,d.y+d.h-12-i*14,d.w-16,5); }
-  // cold glow + iron banding
-  ctx.save(); ctx.globalCompositeOperation='lighter';
-  const cg=ctx.createRadialGradient(d.x+d.w/2,d.y+d.h*0.6,4,d.x+d.w/2,d.y+d.h*0.6,90);
-  cg.addColorStop(0,`rgba(90,140,210,${0.18+Math.sin(time*0.003)*0.04})`); cg.addColorStop(1,'rgba(90,140,210,0)');
-  ctx.fillStyle=cg; ctx.fillRect(d.x-40,d.y-40,d.w+80,d.h+80); ctx.restore();
-  // torches flanking
-  drawWallTorch(d.x-22,d.y+30,time); drawWallTorch(d.x+d.w+22,d.y+30,time);
+function drawDungeonDoor(time){ const d=DUNGEON_DOOR;
+  // pale stone archway frame (high contrast vs the dark wall)
+  ctx.fillStyle='#6f665a'; rr(d.x-16,d.y-14,d.w+32,d.h+24,14); ctx.fill();
+  ctx.fillStyle='#8a8170'; rr(d.x-9,d.y-8,d.w+18,d.h+16,12); ctx.fill();
+  // recessed dark opening
+  ctx.fillStyle='#070910'; rr(d.x,d.y+4,d.w,d.h-2,8); ctx.fill();
+  // descending stairs catching cold light
+  for(let i=0;i<6;i++){ const v=72-i*9; ctx.fillStyle='rgb('+v+','+(v+6)+','+(v+24)+')'; ctx.fillRect(d.x+10,d.y+d.h-16-i*14,d.w-20,6); }
+  // heavy iron-banded door, swung partly open to the left
+  const dw=d.w*0.5;
+  const dg=ctx.createLinearGradient(d.x,0,d.x+dw,0); dg.addColorStop(0,'#3a2614'); dg.addColorStop(.6,'#5a3a1c'); dg.addColorStop(1,'#2c1c0e');
+  ctx.fillStyle=dg; rr(d.x+2,d.y+8,dw,d.h-14,4); ctx.fill();
+  ctx.strokeStyle='#15140f'; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(d.x+4,d.y+30); ctx.lineTo(d.x+dw,d.y+30); ctx.moveTo(d.x+4,d.y+d.h-34); ctx.lineTo(d.x+dw,d.y+d.h-34); ctx.stroke();
+  ctx.fillStyle='#caa24a'; for(const ry of [30,d.h-34]) for(let i=0;i<3;i++){ ctx.beginPath(); ctx.arc(d.x+12+i*((dw-18)/2),d.y+ry,2.2,0,7); ctx.fill(); }
+  ctx.strokeStyle='#15140f'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(d.x+dw-8,d.y+d.h*0.5,6,0,7); ctx.stroke();
+  // keystone skull
+  ctx.fillStyle='#d6cfbe'; ctx.beginPath(); ctx.arc(d.x+d.w/2,d.y-2,10,0,7); ctx.fill();
+  ctx.fillStyle='#1f1c16'; ctx.beginPath(); ctx.arc(d.x+d.w/2-3.5,d.y-3,2.2,0,7); ctx.arc(d.x+d.w/2+3.5,d.y-3,2.2,0,7); ctx.fill(); ctx.fillRect(d.x+d.w/2-1,d.y+1,2,4);
+  // cold glow from within
+  ctx.save(); ctx.globalCompositeOperation='lighter'; const cg=ctx.createRadialGradient(d.x+d.w*0.62,d.y+d.h*0.6,4,d.x+d.w*0.62,d.y+d.h*0.6,84);
+  cg.addColorStop(0,'rgba(96,150,225,'+(0.30+Math.sin(time*0.003)*0.07)+')'); cg.addColorStop(1,'rgba(96,150,225,0)'); ctx.fillStyle=cg; ctx.fillRect(d.x-44,d.y-44,d.w+88,d.h+92); ctx.restore();
+  // flanking torches
+  drawWallTorch(d.x-22,d.y+42,time); drawWallTorch(d.x+d.w+22,d.y+42,time);
+  // hanging placard
+  const px=d.x+d.w/2;
+  ctx.strokeStyle='#2a1a0c'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(px-42,d.y-30); ctx.lineTo(px-42,d.y-16); ctx.moveTo(px+42,d.y-30); ctx.lineTo(px+42,d.y-16); ctx.stroke();
+  ctx.fillStyle='#2a1c0e'; rr(px-60,d.y-50,120,24,6); ctx.fill(); ctx.strokeStyle='#caa24a'; ctx.lineWidth=2; rr(px-60,d.y-50,120,24,6); ctx.stroke();
+  ctx.fillStyle='#e8b34a'; ctx.font='bold 14px Georgia'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('DUNGEON  ▼', px, d.y-38);
 }
 function drawWindow(x,y,w,h,time){
   ctx.fillStyle='#5a4a36'; rr(x-8,y-8,w+16,h+16,10); ctx.fill();
