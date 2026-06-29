@@ -252,7 +252,6 @@ const npcs=[
 ];
 
 const tavernSolids=[
-  {x:PILLAR.x,y:PILLAR.y,w:PILLAR.w,h:PILLAR.h},
   {x:BAR.x,y:BAR.y,w:BAR.w,h:BAR.h},
   {x:SHELF.x,y:SHELF.y,w:SHELF.w,h:SHELF.h},
   {x:ROUND.x-50,y:ROUND.y-40,w:100,h:90},
@@ -545,7 +544,7 @@ function drawTavern(time){
   npcs.forEach(n=>ents.push({y:n.y,fn:()=>drawCharacter(n.x,n.y,n.facing||'down',n.pal,0)}));
   ents.push({y:player.y,fn:()=>drawCharacter(player.x,player.y,player.dir,'hero',player.moving?player.anim:0)});
   ents.sort((a,b)=>a.y-b.y); ents.forEach(e=>e.fn());
-  drawPillarFront(time); drawChandelier(time);
+  drawChandelier(time);
   tavernLighting(time); colorGrade('rgba(255,160,60,0.16)');
   drawPrompt();
 }
@@ -1565,7 +1564,7 @@ function applyLights(base, lights, time){
 function tavernLighting(time){
   applyLights('rgba(18,10,28,0.46)',[
     {x:W*0.30,y:70,r:230,s:1},{x:205,y:286,r:150,s:.8},{x:ROUND.x,y:ROUND.y-10,r:150,s:.9},
-    {x:PILLAR.x+PILLAR.w/2,y:PILLAR.y+64,r:120,s:.7},{x:205,y:104,r:200,s:.7},{x:1035,y:104,r:200,s:.7},
+    {x:205,y:104,r:200,s:.7},{x:1035,y:104,r:200,s:.7},
     {x:ATM.x+ATM.w/2,y:ATM.y+40,r:120,s:.6},
     {x:POOLTABLE.x+POOLTABLE.w/2,y:POOLTABLE.y+POOLTABLE.h/2,r:130,s:.6},{x:player.x,y:player.y-6,r:120,s:.85},
   ],time);
